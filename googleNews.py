@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import pymysql
+import mysql.connector
 import yaml
 import warnings
 from datetime import datetime
@@ -17,7 +17,7 @@ categories = {
 with open("C:/NewsCrawling/db_config.yaml", "r", encoding="utf-8") as file:
     db_config = yaml.safe_load(file)
 
-connection = pymysql.connect(
+connection = mysql.connector.connect(
     host=db_config["host"],
     user=db_config["user"],
     password=db_config["password"],
@@ -25,7 +25,6 @@ connection = pymysql.connect(
 )
 
 def convert_to_datetime(pubDate):
-    """RSS에서 제공되는 날짜를 MySQL DATETIME 형식으로 변환"""
     try:
         return datetime.strptime(pubDate, "%a, %d %b %Y %H:%M:%S GMT").strftime("%Y-%m-%d %H:%M:%S")
     except ValueError:
@@ -89,7 +88,7 @@ try:
 
     print("모든 뉴스가 성공적으로 데이터베이스에 추가되었습니다.")
 
-except pymysql.MySQLError as e:
+except mysql.connector.Error as e:
     print(f"데이터베이스 오류: {e}")
 
 finally:
