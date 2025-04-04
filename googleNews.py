@@ -14,15 +14,16 @@ categories = {
     "sports": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR%3Ako"
 }
 
-with open("C:/NewsCrawling/db_config.yaml", "r", encoding="utf-8") as file:
-    db_config = yaml.safe_load(file)
-
-connection = mysql.connector.connect(
-    host=db_config["host"],
-    user=db_config["user"],
-    password=db_config["password"],
-    database=db_config["database"]
-)
+def connect_db():
+    with open("C:/NewsCrawling/db_config.yaml", "r", encoding="utf-8") as file:
+        db_config = yaml.safe_load(file)
+        
+    return mysql.connector.connect(
+        host=db_config["host"],
+        user=db_config["user"],
+        password=db_config["password"],
+        database=db_config["database"]
+    )
 
 def convert_to_datetime(pubDate):
     try:
@@ -31,6 +32,7 @@ def convert_to_datetime(pubDate):
         return None
 
 try:
+    connection = connect_db()
     cursor = connection.cursor()
 
     cursor.execute("SELECT MAX(id) FROM news")
