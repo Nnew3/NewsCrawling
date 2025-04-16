@@ -37,13 +37,17 @@ def get_image_url(driver, link, news_id=None):
     return None
 
 def update_img_url(db_conn, news_id, img_url):
+    if len(img_url) > 500:
+        print(f"이미지 URL 길이 초과 ({len(img_url)}자)")
+        return
+
     cursor = db_conn.cursor()
     try:
         sql = "UPDATE news SET img_url = %s WHERE id = %s"
         cursor.execute(sql, (img_url, news_id))
         db_conn.commit()
     except Exception as e:
-        print(f"DB 조회 오류: {e}")
+        print(f"DB 업데이트 오류: {e}")
     finally:
         cursor.close()
 

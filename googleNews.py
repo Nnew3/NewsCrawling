@@ -69,9 +69,18 @@ try:
                 title_part = title
                 publisher_part = ""
             
+            if len(title_part) > 200:
+                print(f"제목 길이 초과: '{title_part[:50]}...'")
+                continue
+            if len(publisher_part) > 100:
+                print(f"출판사 길이 초과: '{publisher_part[:50]}...'")
+                continue
+            if len(link) > 500:
+                print(f"링크 길이 초과: '{link[:50]}...'")
+                continue
+            
             cursor.execute("SELECT COUNT(*) FROM news WHERE title = %s", (title_part,))
             title_exists = cursor.fetchone()[0]
-
 
             if title_exists == 0:
                 sql = """
