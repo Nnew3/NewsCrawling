@@ -69,7 +69,6 @@ try:
                 title_part = title
                 publisher_part = ""
             
-            
             cursor.execute("SELECT COUNT(*) FROM news WHERE title = %s", (title_part,))
             title_exists = cursor.fetchone()[0]
 
