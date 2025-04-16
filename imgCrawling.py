@@ -3,9 +3,10 @@ import yaml
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
-import time
 
 def connect_db():
     with open("C:/NewsCrawling/db_config.yaml", "r", encoding="utf-8") as file:
@@ -21,8 +22,9 @@ def connect_db():
 def get_image_url(driver, link, news_id=None):
     try:
         driver.get(link)
-        time.sleep(2)
+        wait = WebDriverWait(driver, 5)
         try:
+            wait.until(EC.presence_of_element_located((By.XPATH, "//meta[@property='og:image']")))
             image = driver.find_element(By.XPATH, "//meta[@property='og:image']")
             img_url = image.get_attribute("content")
             if img_url and 'lh3.googleusercontent.com' not in img_url:
@@ -30,20 +32,24 @@ def get_image_url(driver, link, news_id=None):
                 return img_url
             else:
                 print(f"제외 ID {news_id}: Google 기본 이미지")
-        except NoSuchElementException:
+        except (NoSuchElementException, TimeoutException):
             print(f"실패 ID {news_id}: 대표 이미지 없음")
     except WebDriverException as e:
         print(f"오류 ID {news_id}: WebDriver 오류: {e}")
     return None
 
 def update_img_url(db_conn, news_id, img_url):
+    if len(img_url) > 500:
+        print(f"ID {news_id}: 이미지 URL 길이 초과 ({len(img_url)}자), 저장하지 않음")
+        return
+
     cursor = db_conn.cursor()
     try:
         sql = "UPDATE news SET img_url = %s WHERE id = %s"
         cursor.execute(sql, (img_url, news_id))
         db_conn.commit()
     except Exception as e:
-        print(f"DB 조회 오류: {e}")
+        print(f"DB 업데이트 오류 ID {news_id}: {e}")
     finally:
         cursor.close()
 
@@ -56,6 +62,10 @@ def crawl_and_update_images():
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--blink-settings=imagesEnabled=false')
+
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
         for row in rows:
