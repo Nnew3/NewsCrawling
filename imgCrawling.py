@@ -18,9 +18,18 @@ def connect_db():
         database=db_config["database"]
     )
 
-def get_image_url(driver, link, news_id=None):
+def get_real_url_from_google_news(link, driver):
     try:
         driver.get(link)
+        time.sleep(2)
+        return driver.current_url
+    except Exception as e:
+        print(f"리디렉션 실패: {e}")
+        return None
+
+def get_image_url(driver, real_url, news_id=None):
+    try:
+        driver.get(real_url)
         time.sleep(2)
         try:
             image = driver.find_element(By.XPATH, "//meta[@property='og:image']")
@@ -60,12 +69,24 @@ def crawl_and_update_images():
 
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
         for row in rows:
-            img_url = get_image_url(driver, row['link'], row['id'])
+            news_id = row['id']
+            link = row['link']
+
+            real_url = get_real_url_from_google_news(link, driver)
+            if not real_url:
+                print(f"[{news_id}] 리디렉션 실패")
+                continue
+
+            img_url = get_image_url(driver, real_url, news_id)
             if img_url:
-                update_img_url(db_conn, row['id'], img_url)
+                update_img_url(db_conn, news_id, img_url)
+
+            time.sleep(1)
 
         driver.quit()
     except Exception as e:
